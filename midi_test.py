@@ -38,9 +38,13 @@ timer_start = time()
 mid = mido.MidiFile('dataset_sample.midi', clip=True)
 print("Done reading file, dt=",time()-timer_start) #TIMING
 
+tempo = -1
+
 #extract notes from midi file
 for track in mid.tracks:
     for msg in track:
+        if msg.type == "set_tempo":
+            tempo = msg.tempo
         if msg.type == "note_on":
             if msg.velocity > 0: #node_on
                 note = Note(msg.type, msg.channel, msg.note, msg.velocity, msg.time, total_time)
@@ -63,15 +67,19 @@ for note in notes:
 
 print("done making numpy array, dt=",time()-timer_start) #TIMING
 
-#saving numpy
-np.savetxt("numpy_repr_of_midi.csv", notes_num, delimiter=",")
-
 print("done making csv, dt=",time()-timer_start) #TIMING
 
 durations = [note.duration for note in notes if note.duration]
 print("min",min(durations))
 print("max",max(durations))
 print("avr",sum(durations)/len(durations))
+
+# beat is a quarter note. There are 4 in a bar.
+seconds_per_tick = (tempo/mid.ticks_per_beat)/1000000 #our res is 1 tick per vector.
+song_length = seconds_per_tick*total_time# in seconds
+
+print("total length of track: ", song_length, "s")
+print("total length of track: ", song_length/60, "min")
 
 
 # # draw notes like in garage band: USING NOTES OBJECTS
