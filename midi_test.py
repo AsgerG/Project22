@@ -1,7 +1,8 @@
 import mido
 import pygame
+import numpy as np
+from time import time
 
-mid = mido.MidiFile('dataset_sample.midi', clip=True)
 
 # #play music
 # pygame.init()
@@ -25,6 +26,17 @@ class Note():
         self.velocity = velocity
         self.time = time
         self.start_time = start_time
+    
+    def to_numpy(self):
+        v = np.zeros(129)
+        v[self.note] = 1
+        return v
+
+print("Converting midi") #TIMING
+timer_start = time()
+
+mid = mido.MidiFile('dataset_sample.midi', clip=True)
+print("Done reading file, dt=",time()-timer_start) #TIMING
 
 #extract notes from midi file
 for track in mid.tracks:
@@ -41,36 +53,90 @@ for track in mid.tracks:
                 notes[unfinished_index].stop_time = total_time
         total_time += msg.time
 
-# open notes list to see all notes
+print("done making note objects, dt=",time()-timer_start) #TIMING
 
-# draw notes like in garage band
-pygame.init()
-screen = pygame.display.set_mode((800, 128*2))
-clock = pygame.time.Clock()
+#make notes into an array
+notes_num = np.zeros((total_time,129))
+for note in notes:
+    for i in range(note.duration):
+        notes_num[note.start_time+i][note.note] = 1
 
-done = False
+print("done making numpy array, dt=",time()-timer_start) #TIMING
 
-print("Entering loop")
-while not done:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            done = True
-    #draw first 2000
-    screen.fill((0, 0, 0))  
-    color = (255,0,0)
+#saving numpy
+np.savetxt("numpy_repr_of_midi.csv", notes_num, delimiter=",")
 
-    scale_x = 10
-    for note_obj in notes:
-        y = (128*2) - (note_obj.note * 2)
-        x1 = note_obj.start_time / scale_x
-        x2 = note_obj.stop_time / scale_x
-        pygame.draw.line(screen,color,(x1,y),(x2,y))
+print("done making csv, dt=",time()-timer_start) #TIMING
 
-    #for point in getLine((200,200),(mouse_x,mouse_y)):
-    #    pygame.draw.line(screen,(255,255,255),point,point)
+durations = [note.duration for note in notes if note.duration]
+print("min",min(durations))
+print("max",max(durations))
+print("avr",sum(durations)/len(durations))
 
-    pygame.display.flip()       
-    clock.tick(120)
+
+# # draw notes like in garage band: USING NOTES OBJECTS
+# pygame.init()
+# screen = pygame.display.set_mode((800, 128*2))
+# clock = pygame.time.Clock()
+
+# done = False
+
+# print("Entering loop")
+# while not done:
+#     for event in pygame.event.get():
+#         if event.type == pygame.QUIT:
+#             done = True
+#     #draw first 2000
+#     screen.fill((0, 0, 0))  
+#     color = (255,0,0)
+
+#     scale_x = 10
+#     for note_obj in notes:
+#         y = (128*2) - (note_obj.note * 2)
+#         x1 = note_obj.start_time / scale_x
+#         x2 = note_obj.stop_time / scale_x
+#         pygame.draw.line(screen,color,(x1,y),(x2,y))
+
+#     #for point in getLine((200,200),(mouse_x,mouse_y)):
+#     #    pygame.draw.line(screen,(255,255,255),point,point)
+
+#     pygame.display.flip()       
+#     clock.tick(120)
+
+#####################################################################
+
+# # draw notes like in garage band: USING NUMPY ARRAY
+# pygame.init()
+# screen = pygame.display.set_mode((1600, 128*2))
+# clock = pygame.time.Clock()
+
+# done = False
+
+# print("Entering loop")
+# once = True
+# while not done:
+#     for event in pygame.event.get():
+#         if event.type == pygame.QUIT:
+#             done = True
+#     if once:
+#         #draw first 2000
+#         screen.fill((0, 0, 0))  
+#         color = (255,0,0)
+
+#         scale_x = 10
+#         for time, vector in enumerate(notes_num):
+#             for note, is_active in enumerate(vector):
+#                 if is_active:
+#                     y = (128*2) - (note * 2)
+#                     pygame.draw.line(screen,color,(time/scale_x,y),(time/scale_x,y))
+
+#         #for point in getLine((200,200),(mouse_x,mouse_y)):
+#         #    pygame.draw.line(screen,(255,255,255),point,point)
+#         once = False
+
+#     pygame.display.flip()       
+#     clock.tick(120)
+
 
 
 
