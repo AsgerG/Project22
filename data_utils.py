@@ -26,7 +26,7 @@ def onehot(t, num_classes):
 
 class load_data():
     # data_train, data_test and le are public
-    def __init__(self, resolution = 1):
+    def __init__(self, resolution=1):
         track_paths = self._generate_paths()
         self.resolution = resolution
 
@@ -49,11 +49,10 @@ class load_data():
         test_data = np.zeros((1, 129))
         for idx, path in enumerate(track_paths):
             if idx % 5 == 0:
-                test_data = np.concatenate(
-                    (test_data, convert_midi_to_numpy(path, resolution)))
+                test_data.append(
+                    convert_midi_to_numpy(path, 100))
             else:
-                train_data = np.concatenate(
-                    (train_data, convert_midi_to_numpy(path, resolution)))
+                train_data.append(convert_midi_to_numpy(path, 100))
             print(test_data.shape)
             print(train_data.shape)
             print(idx)
@@ -282,6 +281,6 @@ class batch_generator():
                         break
 
 
-data = load_data()
+data = load_data(100)
 
 print(data)

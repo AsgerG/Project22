@@ -6,28 +6,29 @@ from time import time, sleep
 import numpy as np
 import matplotlib.pyplot as plt
 
-#lists for saving data
+# lists for saving data
 all_midi_2017_np = []
 timings = []
 
-path = "/Users/oas/Documents/Deep_learning/Project22/maestro-v2.0.0"
-directory = r"/Users/oas/Documents/Deep_learning/Project22/maestro-v2.0.0"
+path = "/Users/sebastian/projects/Project22/maestro-v2.0.0"
+directory = r"/Users/sebastian/projects/Project22/maestro-v2.0.0"
 for folder in os.listdir(directory):
     folder_path = path+"/"+folder
-    print(folder_path,"is dir:",os.path.isdir(folder_path))
+    print(folder_path, "is dir:", os.path.isdir(folder_path))
     if os.path.isdir(folder_path):
         for filename in os.listdir(folder_path):
             if filename.endswith(".midi"):
-                t0 = time() #timing
+                t0 = time()  # timing
 
-                #convert
-                full_path = folder_path+"/"+filename    
-                all_midi_2017_np.append(midi_conversion.convert_midi_to_numpy(full_path,100))
+                # convert
+                full_path = folder_path+"/"+filename
+                all_midi_2017_np.append(
+                    midi_conversion.convert_midi_to_numpy(full_path, 100))
 
-                #get timings
+                # get timings
                 timing = time()-t0
                 timings.append(timing)
-                print(folder,":","Loading",filename,"took",timing,"s")
+                print(folder, ":", "Loading", filename, "took", timing, "s")
             else:
                 continue
 
