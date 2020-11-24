@@ -1,11 +1,12 @@
 import numpy as np
 import pandas as pd
 import os
+from midi_conversion import convert_midi_to_numpy
 
-from PIL import Image, ImageOps
-from skimage.io import imread
-from skimage.transform import resize
-from sklearn.preprocessing import LabelEncoder
+#from PIL import Image, ImageOps
+#from skimage.io import imread
+#from skimage.transform import resize
+#from sklearn.preprocessing import LabelEncoder
 import warnings
 
 with warnings.catch_warnings():
@@ -13,7 +14,7 @@ with warnings.catch_warnings():
     #from sklearn.cross_validation import StratifiedShuffleSplit
     # cross_validation -> now called: model_selection
     # https://stackoverflow.com/questions/30667525/importerror-no-module-named-sklearn-cross-validation
-    from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
+    #from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 
 
 def onehot(t, num_classes):
@@ -25,32 +26,64 @@ def onehot(t, num_classes):
 
 class load_data():
     # data_train, data_test and le are public
-    def __init__(self, train_path, test_path, image_paths, image_shape=(128, 128)):
-        train_df = pd.read_csv(train_path)
-        test_df = pd.read_csv(test_path)
-        image_paths = image_paths
-        image_shape = image_shape
-        self._load(train_df, test_df, image_paths, image_shape)
+    def __init__(self):
+        track_paths = self._generate_paths()
 
-    def _load(self, train_df, test_df, image_paths, image_shape):
+        # print(self.train.shape)
+        self._load(track_paths)
+
+    def _generate_paths(self):
+        paths = []
+        maestro_dir = "./maestro-v2.0.0/"
+        for maestro_folder in os.listdir(maestro_dir):
+            if maestro_folder == "2004":
+                print(maestro_folder)
+                for track_path in os.listdir(maestro_dir + maestro_folder):
+                    paths.append(maestro_dir + maestro_folder +
+                                 "/" + track_path)
+        return paths
+
+    def _load(self, track_paths):
+        train_data = np.zeros((1, 129))
+        test_data = np.zeros((1, 129))
+        for idx, path in enumerate(track_paths):
+            if idx % 5 == 0:
+                test_data = np.concatenate(
+                    (test_data, convert_midi_to_numpy(path)))
+            else:
+                train_data = np.concatenate(
+                    (train_data, convert_midi_to_numpy(path)))
+            print(test_data.shape)
+            print(train_data.shape)
+            print(idx)
+
+        # print(track_nodes)
+
+        # print(idx)
+        # print(path)
+
+        #nodes = convert_midi_to_numpy(path)
+        # print(nodes)
+
+        #print("loading tracks from folder ")
         # load train.csv
         # numerate image paths and make it a dict
-        path_dict = self._path_to_dict(image_paths)
+        #path_dict = self._path_to_dict(image_paths)
         # merge image paths with data frame
-        train_image_df = self._merge_image_df(train_df, path_dict)
-        test_image_df = self._merge_image_df(test_df, path_dict)
+        #train_image_df = self._merge_image_df(train_df, path_dict)
+        #test_image_df = self._merge_image_df(test_df, path_dict)
         # label encoder-decoder (self. because we need it later)
-        self.le = LabelEncoder().fit(train_image_df['species'])
+        #self.le = LabelEncoder().fit(train_image_df['species'])
         # labels for train
-        t_train = self.le.transform(train_image_df['species'])
+        #t_train = self.le.transform(train_image_df['species'])
         # getting data
-        print("Loading training data")
-        train_data = self._make_dataset(train_image_df, image_shape, t_train)
-        print("Loading test data")
-        test_data = self._make_dataset(test_image_df, image_shape)
+        #print("Loading training data")
+        #train_data = self._make_dataset(train_image_df, image_shape, t_train)
+        #print("Loading test data")
+        #test_data = self._make_dataset(test_image_df, image_shape)
         # need to reformat the train for validation split reasons in the batch_generator
-        self.train = self._format_dataset(train_data, for_train=True)
-        self.test = self._format_dataset(test_data, for_train=False)
+        #self.train = self._format_dataset(train_data, for_train=True)
+        #self.test = self._format_dataset(test_data, for_train=False)
 
     def _path_to_dict(self, image_paths):
         path_dict = dict()
@@ -84,13 +117,13 @@ class load_data():
             sample['texture'] = features[128:]
             if t_train is not None:
                 sample['t'] = np.asarray(t_train[i], dtype='int32')
-            image = imread(row['image'], as_gray=True)
-            image = pad2square(image)
-            image = resize(image, output_shape=image_shape,
-                           mode='reflect', anti_aliasing=True)
-            image = np.expand_dims(image, axis=2)
-            sample['image'] = image
-            data[row['id']] = sample
+            #image = imread(row['image'], as_gray=True)
+            #image = pad2square(image)
+            # image = resize(image, output_shape=image_shape,
+            #               mode='reflect', anti_aliasing=True)
+            #image = np.expand_dims(image, axis=2)
+            #sample['image'] = image
+            #data[row['id']] = sample
             if i % 100 == 0:
                 print("\t%d of %d" % (i, len(df)))
         return data
@@ -151,15 +184,15 @@ class batch_generator():
         #                           random_state=self._seed)))
 
         # Updated to use: model_selection
-        sss = StratifiedShuffleSplit(
-            n_splits=1,
-            test_size=self._val_size,
-            random_state=self._seed
-        ).split(
-            # Needed in StratifiedShuffleSplit for nothing...
-            np.zeros(self._train['ts'].shape),
-            self._train['ts']
-        )
+        sss = []  # StratifiedShuffleSplit(
+        # n_splits=1,
+        #  test_size=self._val_size,
+        #    random_state=self._seed
+        # ).split(
+        # Needed in StratifiedShuffleSplit for nothing...
+        #   np.zeros(self._train['ts'].shape),
+        #    self._train['ts']
+        # )
         self._idcs_train, self._idcs_valid = next(iter(sss))
 
     def _shuffle_train(self):
@@ -246,3 +279,8 @@ class batch_generator():
                     iteration += 1
                     if iteration >= self._num_iterations:
                         break
+
+
+data = load_data()
+
+print(data)

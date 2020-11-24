@@ -21,7 +21,7 @@ def convert_midi_to_numpy(path):
     total_time = 0
     index = 0
 
-    mid = mido.MidiFile('path', clip=True)
+    mid = mido.MidiFile(path, clip=True)
 
     # extract notes from midi file
     for track in mid.tracks:
