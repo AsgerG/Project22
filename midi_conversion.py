@@ -12,13 +12,13 @@ class Note():
         self.time = time
         self.start_time = start_time
 
-def convert_midi_to_numpy(path):
+def convert_midi_to_numpy(path, resolution = 1):
     notes = []
     unfinished_notes = {}
     total_time = 0
     index = 0
 
-    mid = mido.MidiFile('path', clip=True)
+    mid = mido.MidiFile(path, clip=True)
 
     #extract notes from midi file
     for track in mid.tracks:
@@ -36,10 +36,23 @@ def convert_midi_to_numpy(path):
             total_time += msg.time
 
     #make notes into an array
-    notes_num = np.zeros((total_time,129))
+    #notes_np = np.zeros((total_time,129)) #using numbers
+    notes_np = np.full((total_time, 129), False, dtype=bool) #using booleans for better memory
     for note in notes:
         for i in range(note.duration):
-            notes_num[note.start_time+i][note.note] = 1
-
-    return notes_num
+            notes_np[note.start_time+i][note.note] = True
+    
+    resolution = 100
+    if resolution > 1:
+        downscaled_x = int(total_time/resolution)
+        downscaled_notes = np.full((downscaled_x,129), False, dtype=bool)
+        for x_new in range(downscaled_x):
+            v_new = np.full(129,False,dtype=bool)
+            for i in range(resolution):
+                v_new = v_new + notes_np[(x_new*resolution)+i]
+            downscaled_notes[x_new] = v_new
+            
+    return notes_np
     #done. notes_num contains the whole song
+
+temp = convert_midi_to_numpy("dataset_sample.midi",10)

@@ -60,10 +60,21 @@ for track in mid.tracks:
 print("done making note objects, dt=",time()-timer_start) #TIMING
 
 #make notes into an array
-notes_num = np.zeros((total_time,129))
+notes_np = np.zeros((total_time,129))
 for note in notes:
     for i in range(note.duration):
-        notes_num[note.start_time+i][note.note] = 1
+        notes_np[note.start_time+i][note.note] = 1
+
+resolution = 100
+if resolution > 1:
+    downscaled_x = int(total_time/resolution)
+    downscaled_notes = np.full((downscaled_x,129), False, dtype=bool)
+    for x_new in range(downscaled_x):
+        v_new = np.full(129,False,dtype=bool)
+        for i in range(resolution):
+            v_new = v_new + notes_np[(x_new*resolution)+i]
+        downscaled_notes[x_new] = v_new
+
 
 print("done making numpy array, dt=",time()-timer_start) #TIMING
 
@@ -144,6 +155,49 @@ print("total length of track: ", song_length/60, "min")
 
 #     pygame.display.flip()       
 #     clock.tick(120)
+
+########################################################
+
+# draw notes like in garage band: USING NUMPY ARRAY WITH COMPARISON TO DOWNSCALED
+pygame.init()
+screen = pygame.display.set_mode((1600, 128*2))
+clock = pygame.time.Clock()
+
+done = False
+
+print("Entering loop")
+once = True
+while not done:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            done = True
+    if once:
+        #draw first 2000
+        screen.fill((0, 0, 0))  
+        color = (255,0,0)
+
+        scale_x = 10
+        for time, vector in enumerate(notes_np):
+            for note, is_active in enumerate(vector):
+                if is_active:
+                    y = (128*2) - (note * 2)
+                    pygame.draw.line(screen,color,(time/scale_x,y),(time/scale_x,y))
+
+        scale_x = 0.1
+        for time, vector in enumerate(downscaled_notes):
+            for note, is_active in enumerate(vector):
+                if is_active:
+                    y = ((128*2) - (note * 2)) + 2
+                    pygame.draw.line(screen,(0,255,0),(time/scale_x,y),(time/scale_x,y))
+
+        #for point in getLine((200,200),(mouse_x,mouse_y)):
+        #    pygame.draw.line(screen,(255,255,255),point,point)
+        once = False
+
+    pygame.display.flip()       
+    clock.tick(120)
+
+
 
 
 
