@@ -45,7 +45,6 @@ def convert_midi_to_numpy(path, resolution = 1):
         for i in range(note.duration):
             notes_np[note.start_time+i][note.note] = True
     
-    resolution = 100
     if resolution > 1:
         downscaled_x = int(total_time/resolution)
         downscaled_notes = np.full((downscaled_x,129), False, dtype=bool)
@@ -59,4 +58,5 @@ def convert_midi_to_numpy(path, resolution = 1):
     return notes_np
     #done. notes_num contains the whole song
 
-temp = convert_midi_to_numpy("dataset_sample.midi",10)
+temp = convert_midi_to_numpy("dataset_sample.midi",100)
+len(temp)
