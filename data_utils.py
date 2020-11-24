@@ -26,8 +26,9 @@ def onehot(t, num_classes):
 
 class load_data():
     # data_train, data_test and le are public
-    def __init__(self):
+    def __init__(self, resolution = 1):
         track_paths = self._generate_paths()
+        self.resolution = resolution
 
         # print(self.train.shape)
         self._load(track_paths)
@@ -49,10 +50,10 @@ class load_data():
         for idx, path in enumerate(track_paths):
             if idx % 5 == 0:
                 test_data = np.concatenate(
-                    (test_data, convert_midi_to_numpy(path)))
+                    (test_data, convert_midi_to_numpy(path, resolution)))
             else:
                 train_data = np.concatenate(
-                    (train_data, convert_midi_to_numpy(path)))
+                    (train_data, convert_midi_to_numpy(path, resolution)))
             print(test_data.shape)
             print(train_data.shape)
             print(idx)

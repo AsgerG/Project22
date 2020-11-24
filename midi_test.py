@@ -2,6 +2,8 @@ import mido
 import pygame
 import numpy as np
 from time import time
+import midi_conversion
+from math import floor, ceil
 
 
 # #play music
@@ -57,41 +59,28 @@ for track in mid.tracks:
                 notes[unfinished_index].stop_time = total_time
         total_time += msg.time
 
-print("done making note objects, dt=",time()-timer_start) #TIMING
+def get_length(mid):
+    # beat is a quarter note. There are 4 in a bar.
+    seconds_per_tick = (tempo/mid.ticks_per_beat)/1000000 #our res is 1 tick per vector.
+    song_length_total = seconds_per_tick*total_time# total length in seconds
+    h = 60*60
+    m = 60
+    song_length_temp = song_length_total
+    song_length_hours = floor(song_length_temp/h) #get hours
+    song_length_temp = song_length_temp-song_length_hours*h
+    song_length_minutes = floor((song_length_temp)/m) #get remaining minutes
+    song_length_temp = song_length_temp-song_length_minutes*m
+    song_length_seconds = song_length_temp #get remaining seconds
 
-#make notes into an array
-notes_np = np.zeros((total_time,129))
-for note in notes:
-    for i in range(note.duration):
-        notes_np[note.start_time+i][note.note] = 1
+    return (song_length_total, (song_length_hours, "h", song_length_minutes, "m", song_length_seconds, "s"))
 
-resolution = 100
-if resolution > 1:
-    downscaled_x = int(total_time/resolution)
-    downscaled_notes = np.full((downscaled_x,129), False, dtype=bool)
-    for x_new in range(downscaled_x):
-        v_new = np.full(129,False,dtype=bool)
-        for i in range(resolution):
-            v_new = v_new + notes_np[(x_new*resolution)+i]
-        downscaled_notes[x_new] = v_new
+print(get_length(mid))
 
+# print("total length of track: ", song_length, "s")
+# print("total length of track: ", song_length/60, "min")
 
-print("done making numpy array, dt=",time()-timer_start) #TIMING
-
-print("done making csv, dt=",time()-timer_start) #TIMING
-
-durations = [note.duration for note in notes if note.duration]
-print("min",min(durations))
-print("max",max(durations))
-print("avr",sum(durations)/len(durations))
-
-# beat is a quarter note. There are 4 in a bar.
-seconds_per_tick = (tempo/mid.ticks_per_beat)/1000000 #our res is 1 tick per vector.
-song_length = seconds_per_tick*total_time# in seconds
-
-print("total length of track: ", song_length, "s")
-print("total length of track: ", song_length/60, "min")
-
+notes_np = midi_conversion.convert_midi_to_numpy("dataset_sample.midi",1)
+downscaled_notes = midi_conversion.convert_midi_to_numpy("dataset_sample.midi",100)
 
 # # draw notes like in garage band: USING NOTES OBJECTS
 # pygame.init()
@@ -158,47 +147,54 @@ print("total length of track: ", song_length/60, "min")
 
 ########################################################
 
-# draw notes like in garage band: USING NUMPY ARRAY WITH COMPARISON TO DOWNSCALED
-pygame.init()
-screen = pygame.display.set_mode((1600, 128*2))
-clock = pygame.time.Clock()
+# # draw notes like in garage band: USING NUMPY ARRAY WITH COMPARISON TO DOWNSCALED
+# pygame.init()
+# screen = pygame.display.set_mode((1600, 128*2))
+# clock = pygame.time.Clock()
 
-done = False
+# done = False
 
-print("Entering loop")
-once = True
-while not done:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            done = True
-    if once:
-        #draw first 2000
-        screen.fill((0, 0, 0))  
-        color = (255,0,0)
+# print("Entering loop")
+# once = True
+# while not done:
+#     for event in pygame.event.get():
+#         if event.type == pygame.QUIT:
+#             done = True
+#     if once:
+#         #draw first 2000
+#         screen.fill((0, 0, 0))  
+#         color = (255,0,0)
 
-        scale_x = 10
-        for time, vector in enumerate(notes_np):
-            for note, is_active in enumerate(vector):
-                if is_active:
-                    y = (128*2) - (note * 2)
-                    pygame.draw.line(screen,color,(time/scale_x,y),(time/scale_x,y))
+#         scale_x = 10
+#         for time, vector in enumerate(notes_np):
+#             for note, is_active in enumerate(vector):
+#                 if is_active:
+#                     y = (128*2) - (note * 2)
+#                     pygame.draw.line(screen,color,(time/scale_x,y),(time/scale_x,y))
 
-        scale_x = 0.1
-        for time, vector in enumerate(downscaled_notes):
-            for note, is_active in enumerate(vector):
-                if is_active:
-                    y = ((128*2) - (note * 2)) + 2
-                    pygame.draw.line(screen,(0,255,0),(time/scale_x,y),(time/scale_x,y))
+#         scale_x = 0.1
+#         for time, vector in enumerate(downscaled_notes):
+#             for note, is_active in enumerate(vector):
+#                 if is_active:
+#                     y = ((128*2) - (note * 2)) + 2
+#                     pygame.draw.line(screen,(0,255,0),(time/scale_x,y),(time/scale_x,y))
 
-        #for point in getLine((200,200),(mouse_x,mouse_y)):
-        #    pygame.draw.line(screen,(255,255,255),point,point)
-        once = False
+#         #for point in getLine((200,200),(mouse_x,mouse_y)):
+#         #    pygame.draw.line(screen,(255,255,255),point,point)
+#         once = False
 
-    pygame.display.flip()       
-    clock.tick(120)
-
-
+#     pygame.display.flip()       
+#     clock.tick(120)
 
 
+print()
 
+mid = mido.MidiFile()
+track = mido.MidiTrack()
+mid.tracks.append(track)
 
+track.append(mido.Message('program_change', program=12, time=0))
+track.append(mido.Message('note_on', note=64, velocity=64, time=32))
+track.append(mido.Message('note_off', note=64, velocity=127, time=32))
+
+mid.save('new_song.mid')

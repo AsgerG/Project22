@@ -32,7 +32,7 @@ def convert_midi_to_numpy(path, resolution = 1):
                     notes.append(note)
                     unfinished_notes[msg.note] = (index, total_time)
                     index += 1
-                else:  # node_off
+                elif msg.note in unfinished_notes: #to avoid key errors, check that it does exist
                     (unfinished_index, start_time) = unfinished_notes.pop(msg.note)
                     notes[unfinished_index].duration = total_time - start_time
                     notes[unfinished_index].stop_time = total_time
@@ -58,5 +58,7 @@ def convert_midi_to_numpy(path, resolution = 1):
     return notes_np
     #done. notes_num contains the whole song
 
-temp = convert_midi_to_numpy("dataset_sample.midi",100)
-len(temp)
+
+temp = convert_midi_to_numpy("dataset_sample.midi",100) #EXAMPLE
+
+print(len(temp))
