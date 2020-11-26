@@ -156,17 +156,17 @@ class batch_generator():
                         break
 
 
-#max_iterations = 50000
-#data = load_data()
-#batch_gen = batch_generator(data)
-#eval_every = 1000
+max_iterations = 50000
+data = load_data()
+batch_gen = batch_generator(data)
+eval_every = 1000
 
-# for i, batch_train in enumerate(batch_gen.gen_train()):
-#    if i % eval_every == 0:
-#        print("training...")
+for i, batch_train in enumerate(batch_gen.gen_train()):
+    if i % eval_every == 0:
+        print("training...")
 
     # Train network
 
-#    if max_iterations < i:
-#        break
-# print(data)
+    if max_iterations < i:
+        break
+print(data)

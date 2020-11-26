@@ -31,6 +31,10 @@ def accuracy(ys, ts):
     return torch.mean(correct_prediction.float())
 
 
+def get_labels(batch):
+    return get_variable(Variable(torch.from_numpy(batch['ts']).long()))
+
+
 data = data_utils.load_data()
 net = nn.Net()
 # Function to get label
@@ -54,12 +58,7 @@ batch_gen = data_utils.batch_generator(data,
 
 
 def get_input(batch):
-    return {
-        'x_img': get_variable(Variable(torch.from_numpy(batch['images']))),
-        'x_margin': get_variable(Variable(torch.from_numpy(batch['margins']))),
-        'x_shape': get_variable(Variable(torch.from_numpy(batch['shapes']))),
-        'x_texture': get_variable(Variable(torch.from_numpy(batch['textures'])))
-    }
+    return get_variable(Variable(torch.from_numpy(batch)))
 
 
 def get_variable(x):
@@ -132,3 +131,6 @@ for i, batch_train in enumerate(batch_gen.gen_train()):
 
     if max_iter < i:
         break
+
+
+val = torch.max([])
