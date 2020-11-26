@@ -4,9 +4,9 @@ import os
 from midi_conversion import convert_midi_to_numpy
 
 #from PIL import Image, ImageOps
-#from skimage.io import imread
-#from skimage.transform import resize
-#from sklearn.preprocessing import LabelEncoder
+from skimage.io import imread
+from skimage.transform import resize
+from sklearn.model_selection import StratifiedShuffleSplit
 import warnings
 
 with warnings.catch_warnings():
@@ -37,25 +37,37 @@ class load_data():
         paths = []
         maestro_dir = "./maestro-v2.0.0/"
         for maestro_folder in os.listdir(maestro_dir):
-            if maestro_folder == "2004":
-                print(maestro_folder)
+            # if maestro_folder == "2004":
+            # print(maestro_folder)
+            if len(maestro_folder) == 4:
                 for track_path in os.listdir(maestro_dir + maestro_folder):
                     paths.append(maestro_dir + maestro_folder +
                                  "/" + track_path)
         return paths
 
     def _load(self, track_paths):
+        print(len(track_paths))
+        #train_data = []
+        #test_data = []
+        self.ts = []
         train_data = np.zeros((1, 129))
         test_data = np.zeros((1, 129))
         for idx, path in enumerate(track_paths):
             if idx % 5 == 0:
-                test_data.append(
-                    convert_midi_to_numpy(path, 100))
+                test_data = np.concatenate(
+                    (test_data, convert_midi_to_numpy(path, 100)))
+                #train_data.append(convert_midi_to_numpy(path, 100))
             else:
-                train_data.append(convert_midi_to_numpy(path, 100))
-            print(test_data.shape)
-            print(train_data.shape)
+                train_data = np.concatenate(
+                    (train_data, convert_midi_to_numpy(path, 100)))
+            # if idx == 3:
+               # break
+            # print(test_data.shape)
+            # print(train_data.shape)
             print(idx)
+
+        self.train = train_data
+        self.test = test_data
 
         # print(track_nodes)
 
@@ -156,13 +168,13 @@ class load_data():
 
 
 class batch_generator():
-    def __init__(self, data, batch_size=64, num_classes=99,
-                 num_iterations=5e3, num_features=64, seed=42, val_size=0.1):
+    def __init__(self, data, batch_size=64, num_classes=129,
+                 num_iterations=5e3, num_features=129, seed=42, val_size=0.1):
         self._train = data.train
         self._test = data.test
         # get image size
-        value = self._train['images'][0]
-        self._image_shape = list(value.shape)
+        #value = self._train['images'][0]
+        #self._image_shape = list(value.shape)
         self._batch_size = batch_size
         self._num_classes = num_classes
         self._num_iterations = num_iterations
@@ -172,27 +184,15 @@ class batch_generator():
         self._valid_split()
 
     def _valid_split(self):
-        #from sklearn.cross_validation import StratifiedShuffleSplit
-        # cross_validation -> now called: model_selection
-        # https://stackoverflow.com/questions/30667525/importerror-no-module-named-sklearn-cross-validation
-
-        # self._idcs_train, self._idcs_valid =next(iter(
-        #    StratifiedShuffleSplit(#self._train['ts'],
-        #                           n_iter=1, # Changed to n_splits in model_selection
-        #                           #n_splits=1,
-        #                           test_size=self._val_size,
-        #                           random_state=self._seed)))
-
-        # Updated to use: model_selection
-        sss = []  # StratifiedShuffleSplit(
-        # n_splits=1,
-        #  test_size=self._val_size,
-        #    random_state=self._seed
-        # ).split(
-        # Needed in StratifiedShuffleSplit for nothing...
-        #   np.zeros(self._train['ts'].shape),
-        #    self._train['ts']
-        # )
+        sss = StratifiedShuffleSplit(
+            n_splits=1,
+            test_size=self._val_size,
+            random_state=self._seed
+        ).split(
+            # Needed in StratifiedShuffleSplit for nothing...
+            np.zeros((self._train.shape[0])),
+            np.zeros((self._train.shape[0]))
+        )
         self._idcs_train, self._idcs_valid = next(iter(sss))
 
     def _shuffle_train(self):
@@ -200,50 +200,29 @@ class batch_generator():
 
     def _batch_init(self, purpose):
         assert purpose in ['train', 'valid', 'test']
-        batch_holder = dict()
-        batch_holder['margins'] = np.zeros(
-            (self._batch_size, self._num_features), dtype='float32')
-        batch_holder['shapes'] = np.zeros(
-            (self._batch_size, self._num_features), dtype='float32')
-        batch_holder['textures'] = np.zeros(
-            (self._batch_size, self._num_features), dtype='float32')
-        batch_holder['images'] = np.zeros(
-            tuple([self._batch_size] + self._image_shape), dtype='float32')
-        if (purpose == "train") or (purpose == "valid"):
-            batch_holder['ts'] = np.zeros(
-                (self._batch_size, self._num_classes), dtype='float32')
-        else:
-            batch_holder['ids'] = []
+        batch_holder = np.zeros(
+            (self._batch_size, self._num_features), dtype=bool)
         return batch_holder
 
     def gen_valid(self):
         batch = self._batch_init(purpose='valid')
         i = 0
         for idx in self._idcs_valid:
-            batch['margins'][i] = self._train['margins'][idx]
-            batch['shapes'][i] = self._train['shapes'][idx]
-            batch['textures'][i] = self._train['textures'][idx]
-            batch['images'][i] = self._train['images'][idx]
-            batch['ts'][i] = onehot(np.asarray(
-                [self._train['ts'][idx]], dtype='float32'), self._num_classes)
+            batch[i] = self._train[idx]
             i += 1
             if i >= self._batch_size:
                 yield batch, i
                 batch = self._batch_init(purpose='valid')
                 i = 0
         if i != 0:
-            batch['ts'] = batch['ts'][:i]
-            batch['margins'] = batch['margins'][:i]
-            batch['shapes'] = batch['shapes'][:i]
-            batch['textures'] = batch['textures'][:i]
-            batch['images'] = batch['images'][:i]
+            batch = batch[:i]
             yield batch, i
 
     def gen_test(self):
         batch = self._batch_init(purpose='test')
         i = 0
-        for idx in range(len(self._test['ids'])):
-            batch['margins'][i] = self._test['margins'][idx]
+        for idx in range(len(self._test)):
+            batch[i] = self._test[idx]
             batch['shapes'][i] = self._test['shapes'][idx]
             batch['textures'][i] = self._test['textures'][idx]
             batch['images'][i] = self._test['images'][idx]
@@ -281,6 +260,8 @@ class batch_generator():
                         break
 
 
-data = load_data(100)
+data = load_data()
+batch_gen = batch_generator(data)
+
 
 print(data)
