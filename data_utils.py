@@ -30,23 +30,21 @@ class load_data():
         track_paths = self._generate_paths()
         self.resolution = resolution
 
-        # print(self.train.shape)
         self._load(track_paths)
 
     def _generate_paths(self):
         paths = []
         maestro_dir = "./maestro-v2.0.0/"
         for maestro_folder in os.listdir(maestro_dir):
-            # if maestro_folder == "2004":
-            # print(maestro_folder)
-            if len(maestro_folder) == 4:
+            if maestro_folder == "2004":
+                # print(maestro_folder)
+                # if len(maestro_folder) == 4:
                 for track_path in os.listdir(maestro_dir + maestro_folder):
                     paths.append(maestro_dir + maestro_folder +
                                  "/" + track_path)
         return paths
 
     def _load(self, track_paths):
-        print(len(track_paths))
         #train_data = []
         #test_data = []
         self.ts = []
@@ -60,24 +58,13 @@ class load_data():
             else:
                 train_data = np.concatenate(
                     (train_data, convert_midi_to_numpy(path, 100)))
-            # if idx == 3:
-               # break
-            # print(test_data.shape)
-            # print(train_data.shape)
             print(idx)
 
-        self.train = train_data
-        self.test = test_data
-
-        # print(track_nodes)
-
-        # print(idx)
-        # print(path)
+        self.train = self.chop_data(train_data)
+        self.test = self.chop_data(test_data)
 
         #nodes = convert_midi_to_numpy(path)
-        # print(nodes)
 
-        #print("loading tracks from folder ")
         # load train.csv
         # numerate image paths and make it a dict
         #path_dict = self._path_to_dict(image_paths)
@@ -96,6 +83,26 @@ class load_data():
         # need to reformat the train for validation split reasons in the batch_generator
         #self.train = self._format_dataset(train_data, for_train=True)
         #self.test = self._format_dataset(test_data, for_train=False)
+
+    def chop_data(self, uncut_data, cut_length=1024):
+        chop = 0
+        index = 0
+
+        cutted_data = np.zeros(
+            (int(uncut_data.shape[0]/cut_length), cut_length, 129))
+
+        for i, node in enumerate(uncut_data):
+            if index >= cut_length:
+                index = 0
+                chop += 1
+
+            if chop >= cutted_data.shape[0]:
+                break
+            # print(index)
+            cutted_data[chop][index] = node
+            index += 1
+
+        return cutted_data
 
     def _path_to_dict(self, image_paths):
         path_dict = dict()
@@ -168,7 +175,7 @@ class load_data():
 
 
 class batch_generator():
-    def __init__(self, data, batch_size=64, num_classes=129,
+    def __init__(self, data, batch_size=64, num_classes=1024,
                  num_iterations=5e3, num_features=129, seed=42, val_size=0.1):
         self._train = data.train
         self._test = data.test
@@ -201,7 +208,7 @@ class batch_generator():
     def _batch_init(self, purpose):
         assert purpose in ['train', 'valid', 'test']
         batch_holder = np.zeros(
-            (self._batch_size, self._num_features), dtype=bool)
+            (self._batch_size, self._num_classes, self._num_features), dtype=bool)
         return batch_holder
 
     def gen_valid(self):
@@ -244,12 +251,7 @@ class batch_generator():
             self._shuffle_train()
             for idx in self._idcs_train:
                 # extract data from dict
-                batch['margins'][i] = self._train['margins'][idx]
-                batch['shapes'][i] = self._train['shapes'][idx]
-                batch['textures'][i] = self._train['textures'][idx]
-                batch['images'][i] = self._train['images'][idx]
-                batch['ts'][i] = onehot(np.asarray(
-                    [self._train['ts'][idx]], dtype='float32'), self._num_classes)
+                batch[i] = self._train[idx]
                 i += 1
                 if i >= self._batch_size:
                     yield batch
@@ -260,8 +262,18 @@ class batch_generator():
                         break
 
 
+max_iterations = 50000
 data = load_data()
 batch_gen = batch_generator(data)
+eval_every = 1000
 
 
+for i, batch_train in enumerate(batch_gen.gen_train()):
+    if i % eval_every == 0:
+        print("training...")
+
+    # Train network
+
+    if max_iterations < i:
+        break
 print(data)
