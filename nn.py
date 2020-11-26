@@ -7,7 +7,8 @@ from torch.nn.functional import relu, elu, relu6, sigmoid, tanh, softmax
 
 lstm_hidden = 4
 out_hidden = 64
-NUM_CLASSES = 129
+num_classes = 1024
+num_features = 129
 
 # Keep track of features to output layer #(20*20*128)//64
 # <-- Number of features concatenated before output layer
@@ -32,7 +33,7 @@ class Net(nn.Module):
                                     bias=False)
 
         self.l_out = Linear(in_features=out_hidden,
-                            out_features=NUM_CLASSES,
+                            out_features=num_classes,
                             bias=False)
 
         self.dropout = Dropout(0.7)

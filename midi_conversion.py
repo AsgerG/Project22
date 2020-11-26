@@ -14,7 +14,8 @@ class Note():
         self.time = time
         self.start_time = start_time
 
-def convert_midi_to_numpy(path, resolution = 1):
+
+def convert_midi_to_numpy(path, resolution=1):
     notes = []
     unfinished_notes = {}
     total_time = 0
@@ -32,33 +33,35 @@ def convert_midi_to_numpy(path, resolution = 1):
                     notes.append(note)
                     unfinished_notes[msg.note] = (index, total_time)
                     index += 1
-                elif msg.note in unfinished_notes: #to avoid key errors, check that it does exist
+                elif msg.note in unfinished_notes:  # to avoid key errors, check that it does exist
                     (unfinished_index, start_time) = unfinished_notes.pop(msg.note)
                     notes[unfinished_index].duration = total_time - start_time
                     notes[unfinished_index].stop_time = total_time
             total_time += msg.time
 
-    #make notes into an array
-    #notes_np = np.zeros((total_time,129)) #using numbers
-    notes_np = np.full((total_time, 129), False, dtype=bool) #using booleans for better memory
+    # make notes into an array
+    # notes_np = np.zeros((total_time,129)) #using numbers
+    # using booleans for better memory
+    notes_np = np.full((total_time, 129), False, dtype=bool)
     for note in notes:
         for i in range(note.duration):
             notes_np[note.start_time+i][note.note] = True
-    
+
     if resolution > 1:
         downscaled_x = int(total_time/resolution)
-        downscaled_notes = np.full((downscaled_x,129), False, dtype=bool)
+        downscaled_notes = np.full((downscaled_x, 129), False, dtype=bool)
         for x_new in range(downscaled_x):
-            v_new = np.full(129,False,dtype=bool)
+            v_new = np.full(129, False, dtype=bool)
             for i in range(resolution):
                 v_new = v_new + notes_np[(x_new*resolution)+i]
             downscaled_notes[x_new] = v_new
         notes_np = downscaled_notes
-            
+
     return notes_np
-    #done. notes_num contains the whole song
+    # done. notes_num contains the whole song
 
 
-temp = convert_midi_to_numpy("dataset_sample.midi",100) #EXAMPLE
+# print("hey")
+# temp = convert_midi_to_numpy("dataset_sample.midi", 100)  # EXAMPLE
 
-print(len(temp))
+# print(len(temp))
