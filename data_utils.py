@@ -21,7 +21,7 @@ class load_data():
 
         self._load(track_paths)
 
-    def _generate_paths():
+    def _generate_paths(self):
         paths = []
         maestro_dir = "./maestro-v2.0.0/"
         for maestro_folder in os.listdir(maestro_dir):
@@ -48,11 +48,13 @@ class load_data():
                 train_data = np.concatenate(
                     (train_data, convert_midi_to_numpy(path, 100)))
             print(idx)
+            if idx >= 5:
+                break
 
         self.train = self.chop_data(train_data)
         self.test = self.chop_data(test_data)
 
-    def chop_data(uncut_data, cut_length=1024):
+    def chop_data(self, uncut_data, cut_length=1024):
         chop = 0
         index = 0
 
