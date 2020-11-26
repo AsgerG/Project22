@@ -4,7 +4,7 @@ import numpy as np
 from time import time
 import midi_conversion
 from math import floor, ceil
-
+from midiplotter import plot_midi
 
 # #play music
 # pygame.init()
@@ -81,6 +81,34 @@ print(get_length(mid))
 
 notes_np = midi_conversion.convert_midi_to_numpy("dataset_sample.midi",1)
 downscaled_notes = midi_conversion.convert_midi_to_numpy("dataset_sample.midi",100)
+
+
+#export midi track as .png
+plot_midi(downscaled_notes,filename = "miditester_temp")
+
+# ## DRAW NOTES USING MATPLOTLIB
+
+# ss_l = 1024
+# v_l = 129
+# ss = downscaled_notes[:ss_l]
+# y = [i if ss[e][i] else float("nan") for e in range(ss_l) for i in range(v_l)]
+# fig, ax = plt.subplots(figsize = (40,10))
+# t = [x for x in range(ss_l)]*v_l
+# t.sort()
+# ax.plot(t, y, 'ko', markersize=2)
+
+# ax.set(xlabel='time (tick)', ylabel='note',
+#        title='')
+# ax.grid()
+
+# print("Saving fig")
+# plt.savefig('test_high_res.png', dpi=500)
+# print("Done with fig. Showing fig")
+# #plt.show()
+
+
+# print()
+
 
 # # draw notes like in garage band: USING NOTES OBJECTS
 # pygame.init()
@@ -187,14 +215,16 @@ downscaled_notes = midi_conversion.convert_midi_to_numpy("dataset_sample.midi",1
 #     clock.tick(120)
 
 
-print()
 
-mid = mido.MidiFile()
-track = mido.MidiTrack()
-mid.tracks.append(track)
+# ##### GENERATION OF MIDI FILES 
+# print()
 
-track.append(mido.Message('program_change', program=12, time=0))
-track.append(mido.Message('note_on', note=64, velocity=64, time=32))
-track.append(mido.Message('note_off', note=64, velocity=127, time=32))
+# mid = mido.MidiFile()
+# track = mido.MidiTrack()
+# mid.tracks.append(track)
 
-mid.save('new_song.mid')
+# track.append(mido.Message('program_change', program=12, time=0))
+# track.append(mido.Message('note_on', note=64, velocity=64, time=32))
+# track.append(mido.Message('note_off', note=64, velocity=127, time=32))
+
+# mid.save('new_song.mid')

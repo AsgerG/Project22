@@ -39,3 +39,8 @@ ax.set(xlabel='nr. song', ylabel='timings (s)',
        title='benchmark')
 ax.grid()
 plt.show()
+
+all_midi_2017_np = np.array(all_midi_2017_np)
+print(all_midi_2017_np.nbytes)
+
+print()
