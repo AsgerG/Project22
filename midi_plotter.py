@@ -25,3 +25,13 @@ def plot_midi(midi_np, seq_length = 1024, filename = "temp_midi_file", show_plot
     plt.savefig(filename_full, dpi=500)
     if show_plot:
         plt.show()
+
+def play_midi(filename):
+    import pygame
+    #play music
+    pygame.init()
+    pygame.mixer.music.load(filename)
+    pygame.mixer.music.play()
+    print("PLAYING MUSIC")
+    while True: #TODO make a better solution
+        print()
