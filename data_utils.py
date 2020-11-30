@@ -106,7 +106,7 @@ class batch_generator():
     def _batch_init(self, purpose):
         assert purpose in ['train', 'valid', 'test']
         batch_holder = np.zeros(
-            (self._batch_size, self._num_classes, self._num_features), dtype=bool)
+            (self._batch_size, self._num_classes, self._num_features), dtype='float32')
         return batch_holder
 
     def gen_valid(self):
