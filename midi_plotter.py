@@ -8,6 +8,10 @@ def plot_midi(midi_np, seq_length = 1024, filename = "temp_midi_file", show_plot
     """
     Exports an image showing the midi track. Can be configured to show the plot. 
     """
+
+    #FAIL SAFE
+    if len(midi_np) < seq_length: seq_length = len(midi_np)
+
     ss_l = seq_length
     v_l = 129
     ss = midi_np[:ss_l]
@@ -33,5 +37,5 @@ def play_midi(filename):
     pygame.mixer.music.load(filename)
     pygame.mixer.music.play()
     print("PLAYING MUSIC")
-    while True: #TODO make a better solution
+    while pygame.mixer.music.get_busy(): #TODO make a better solution
         print()

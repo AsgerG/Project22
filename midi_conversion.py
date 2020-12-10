@@ -43,11 +43,52 @@ def convert_midi_to_numpy(path, downscale=1):
             v_new = np.zeros(129)
             for i in range(resolution):
                 v_new = v_new + notes_np[(x_new*resolution)+i]
+            for i in range(len(v_new)):
+                if v_new[i] > 0: v_new[i] = 1
             downscaled_notes[x_new] = v_new
         notes_np = downscaled_notes
 
     return notes_np
     # done. notes_num contains the whole song
+
+
+def convert_matrix_to_word_seq(notes_np, resolution = 1):
+    is_playing = [False for _ in range(129)]
+
+    note_seq = ["x"]
+    
+    for tick, v in enumerate(notes_np):
+        for note, is_on in enumerate(v):
+            note_started = not is_playing[note] and is_on
+            note_stopped = is_playing[note] and not is_on
+            note_playing = is_playing[note] and is_on
+
+            if note_started:
+                is_playing[note] = True
+                note_seq.append("p"+str(note))
+            elif note_stopped:
+                is_playing[note] = False
+                note_seq.append("s"+str(note))
+            #elif note_playing: #not used yet
+        if note_seq[-1][0] == "w":
+            c = int(note_seq[-1][1:])+1
+            note_seq.pop()
+            note_seq.append("w"+str(c))
+        else: note_seq.append("w1")
+  
+    return note_seq[1:]
+
+def convert_to_number_seq(note_seq):
+    #lower half is start, upper half is stop, top is tick_end
+    num_seq = []
+    node_range = 129
+    for word in note_seq:
+        letter = word[0]
+        note = int(word[1:])
+        if letter == "p": num_seq.append(note)
+        elif letter == "s": num_seq.append(note+node_range)
+        elif letter == "w": num_seq.append(note+2*node_range)
+    return num_seq
 
 
 # print("hey")
