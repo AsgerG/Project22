@@ -2,15 +2,17 @@ import mido
 import numpy as np
 from midi_note import Note 
 
-def convert_midi_to_numpy(path, downscale=1):
+def convert_midi_to_numpy(path, downscale=1, ticks_per_beat = 0):
     notes = []
     unfinished_notes = {}
     total_time = 0
     index = 0
 
-    resolution = downscale
 
     mid = mido.MidiFile(path, clip=True)
+    if ticks_per_beat > 0:
+        resolution = int(mid.ticks_per_beat / ticks_per_beat)
+    else: resolution = downscale
 
     # extract notes from midi file
     for track in mid.tracks:
@@ -81,14 +83,22 @@ def convert_matrix_to_word_seq(notes_np, resolution = 1):
 def convert_to_number_seq(note_seq):
     #lower half is start, upper half is stop, top is tick_end
     num_seq = []
-    node_range = 129
     for word in note_seq:
-        letter = word[0]
-        note = int(word[1:])
-        if letter == "p": num_seq.append(note)
-        elif letter == "s": num_seq.append(note+node_range)
-        elif letter == "w": num_seq.append(note+2*node_range)
+        num_seq.append(convert_word_to_num(word))
     return num_seq
+
+def convert_word_to_num(word):
+    node_range = 129
+    letter = word[0]
+    note = int(word[1:])
+    if letter == "p": return note
+    elif letter == "s": return note+node_range
+    elif letter == "w": 
+        if note > 200: note = 200 # WAIT CAP
+        return note+2*node_range
+
+# def convert_num_to_word(num): Yet to implement
+
 
 
 # print("hey")

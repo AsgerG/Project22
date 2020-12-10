@@ -1,11 +1,14 @@
 import midi_conversion
-from midi_plotter import plot_midi, play_midi
+from midi_plotter import plot_midi, play_midi, plot_num_seq
 from midi_note import Note
 import numpy as np
 
-notes_np = midi_conversion.convert_midi_to_numpy("maestro-v2.0.0/2008/MIDI-Unprocessed_04_R1_2008_01-04_ORIG_MID--AUDIO_04_R1_2008_wav--4.midi", downscale = 100) #convert midi to numpy
+notes_np = midi_conversion.convert_midi_to_numpy("maestro-v2.0.0/2008/MIDI-Unprocessed_04_R1_2008_01-04_ORIG_MID--AUDIO_04_R1_2008_wav--4.midi", ticks_per_beat=12) #convert midi to numpy
 note_seq = midi_conversion.convert_matrix_to_word_seq(notes_np)
 num_seq = midi_conversion.convert_to_number_seq(note_seq)
+
+plot_midi(notes_np, seq_length=100, filename="vector")
+plot_num_seq(num_seq, 100, filename="num_seq")
 
 
 #plot_midi(notes_np,seq_length = 100,show_plot = True)
