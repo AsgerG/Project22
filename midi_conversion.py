@@ -80,6 +80,14 @@ def convert_matrix_to_word_seq(notes_np, resolution = 1):
   
     return note_seq[1:]
 
+def convert_matrix_to_word_seq_alt(notes_np):
+    note_seq = []
+    for tick, v in enumerate(notes_np):
+        for note, is_on in enumerate(v):
+            if is_on: note_seq.append(note)
+        note_seq.append(0) # denotes end of tick
+    return note_seq
+
 def convert_to_number_seq(note_seq):
     #lower half is start, upper half is stop, top is tick_end
     num_seq = []
@@ -88,14 +96,21 @@ def convert_to_number_seq(note_seq):
     return num_seq
 
 def convert_word_to_num(word):
-    node_range = 129
+    # in total 0:(62+62+10)
+    note_range = 62
     letter = word[0]
     note = int(word[1:])
+    note = transpose_into_range(note, 33, 94)-33
     if letter == "p": return note
-    elif letter == "s": return note+node_range
+    elif letter == "s": return note+note_range
     elif letter == "w": 
-        if note > 200: note = 200 # WAIT CAP
-        return note+2*node_range
+        if note > 10: note = 10 # WAIT CAP
+        return note+note_range*2
+
+def transpose_into_range(num, lower, upper):
+    while num < lower: num += 8
+    while num > upper: num -= 8
+    return num
 
 # def convert_num_to_word(num): Yet to implement
 
@@ -147,3 +162,28 @@ def convert_numpy_to_midi(notes_np, output_name = "exported_midi_from_numpy", up
     mid_new.tracks.append(track_meta)
     mid_new.tracks.append(track_notes)
     mid_new.save(output_name)
+
+
+def convert_num_seq_to_midi(num_seq, output_name = "exported_midi_from_numpy", upscale = 1, tempo = 500000):
+    mid_new = mido.MidiFile(ticks_per_beat=384)
+    track_meta = mido.MidiTrack()
+    track_notes = mido.MidiTrack()
+
+    track_meta.append(mido.MetaMessage("set_tempo", tempo=tempo))
+    track_meta.append(mido.MetaMessage("time_signature", clocks_per_click = 24, denominator = 4, numerator = 4, time = 0, notated_32nd_notes_per_beat = 8))
+    track_meta.append(mido.MetaMessage("end_of_track", time = 1))
+
+    time = 0
+    for num in num_seq:
+        num = int(num)
+        is_start = num < 62
+        is_stop = num >= 62 and num < 62*2
+        is_wait = num >= 62*2
+
+        if is_start: track_notes.append(mido.Message("note_on", note=num+33, velocity=64, time=time))
+        if is_stop: track_notes.append(mido.Message("note_on", note=num+33-62, velocity=0, time=time))
+        if is_wait: track_notes.append(mido.Message("note_on", note=0, velocity=0, time=num+33-(62*2)))
+
+    mid_new.tracks.append(track_meta)
+    mid_new.tracks.append(track_notes)
+    mid_new.save(output_name+".midi")
